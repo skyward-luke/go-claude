@@ -85,8 +85,8 @@ func Ask(input string) (string, error) {
 		return "", err
 	}
 
-	slog.Debug(slog.String("status", resp.Status).String())
-	slog.Debug(slog.String("raw", string(body)).String())
+	slog.Debug("", "status", resp.Status)
+	slog.Debug("", "raw", string(body))
 
 	var result Response
 	if err := json.Unmarshal(body, &result); err != nil {

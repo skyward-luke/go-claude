@@ -1,20 +1,35 @@
 # Golang CLI for Claude Sonnet
 
-A playful Golang CLI for sending user input to Claude, with colorized output.
+A playful Golang CLI for sending user input to Claude, with optional colorized output
+and structured output of chatbot responses for stdin pipes (|)
 
 ## Run
 
 ```bash
-go run ./cmd
+go run ./cmd is golang better than C?
 ```
 
-## Usage
+## Install
 
 ```bash
 go install ./cmd
+export PATH="$PATH:$HOME/go/bin"
+```
+
+## Simple Usage
+
+```bash
 goclaude is golang better than C?
 ```
 
-## TODO
+## Structured output and piping
 
-- use `slog` logger to structure output for downstream CLI piping
+```bash
+goclaude is golang better than C? -o json | jq
+```
+
+## User guide
+
+```bash
+goclaude -h
+```

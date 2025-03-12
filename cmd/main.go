@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -13,16 +14,47 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+var logger *slog.Logger
+var programLevel = new(slog.LevelVar) // Info by default
+
+func configure(cmd *cli.Command) {
+	logger = slog.Default()
+	if cmd.String("output") == "json" {
+		color.NoColor = true
+		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: programLevel}))
+	}
+	slog.SetDefault(logger)
+
+	if cmd.Bool("debug") {
+		programLevel.Set(slog.LevelDebug)
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+	}
+}
+
 func main() {
 	done := make(chan error)
 
 	cmd := &cli.Command{
 		Name:  "input",
 		Usage: "user input to chatbot",
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			configure(cmd)
+			return nil, nil
+		},
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "no-color",
 				Usage: "disable color output",
+			},
+			&cli.StringFlag{
+				Name:    "output",
+				Aliases: []string{"o"},
+				Usage:   "output format, 'text' (default) or 'json'",
+			},
+			&cli.BoolFlag{
+				Name:    "debug",
+				Aliases: []string{"d"},
+				Usage:   "debug log level",
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -48,7 +80,7 @@ func askQuestion(input string, done chan<- error) {
 	}
 	color.Set(color.FgHiWhite, color.BgBlack)
 	defer color.Unset()
-	fmt.Println("\n", answer)
+	log.Println("\n", answer)
 	done <- nil
 }
 
@@ -64,9 +96,11 @@ func showProgress(done <-chan error) error {
 		select {
 		case <-ticker.C:
 			// Print a period every second
-			fmt.Print(".")
+			// to Stderr so not including in pipes
+			fmt.Fprint(os.Stderr, ".")
 		case err := <-done:
 			// Exit when work is done
+			fmt.Fprint(os.Stderr, "\n")
 			return err
 		}
 	}
