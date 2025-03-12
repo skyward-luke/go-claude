@@ -1,4 +1,4 @@
-# Golang CLI for Claude Sonnet
+# Golang CLI for Claude Chatbot API
 
 A playful Golang CLI for sending user input to Claude, with optional colorized output
 and structured output of chatbot responses for stdin pipes (|)
@@ -7,6 +7,7 @@ and structured output of chatbot responses for stdin pipes (|)
 
 ```bash
 MSG="is golang better than C?"
+go run ./cmd ${MSG}
 echo ${MSG} | go run ./cmd
 ```
 
@@ -21,6 +22,7 @@ export PATH="$PATH:$HOME/go/bin"
 
 ```bash
 echo ${MSG} | goclaude
+goclaude ${MSG}
 ```
 
 ## Structured output and piping

@@ -1,15 +1,13 @@
 package main
 
 import (
-	"bufio"
 	"claude"
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"log"
 	"log/slog"
 	"os"
+	"stdin"
 	"strings"
 	"time"
 
@@ -24,22 +22,26 @@ func main() {
 	done := make(chan error)
 
 	cmd := &cli.Command{
-		Name:  "input",
-		Usage: "user input to chatbot",
+		Usage: "Send a message to Claude, either from stdin or as positional arg",
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 			configure(cmd)
 			if cmd.Bool("no-color") {
 				color.NoColor = true
 			}
-			if !stdinHasData() {
-				return nil, errors.New("missing user input from stdin")
-			}
 			return nil, nil
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			message, err := readFromStdin()
-			if err != nil {
-				return err
+			var message string
+			var err error
+			if stdin.HasData() {
+				message, err = stdin.Read(os.Stdin)
+				if err != nil {
+					return err
+				}
+			} else {
+				tail := cmd.Args().Tail()
+				slog.Debug("", "tail", tail)
+				message = strings.Join(tail, " ")
 			}
 
 			t := cmd.Float("temperature")
@@ -142,29 +144,4 @@ func showProgress(done <-chan error) error {
 			return err
 		}
 	}
-}
-
-// readFromStdin reads all input from stdin
-func readFromStdin() (string, error) {
-	reader := bufio.NewReader(os.Stdin)
-	var builder strings.Builder
-
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			if err == io.EOF {
-				builder.WriteString(line) // Write the last line if it doesn't end with newline
-				break
-			}
-			return "", err
-		}
-		builder.WriteString(line)
-	}
-
-	return builder.String(), nil
-}
-
-func stdinHasData() bool {
-	stat, _ := os.Stdin.Stat()
-	return (stat.Mode() & os.ModeCharDevice) == 0
 }
