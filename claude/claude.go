@@ -17,7 +17,7 @@ type Message struct {
 
 type Request struct {
 	Model     string    `json:"model"`
-	MaxTokens int       `json:"max_tokens"`
+	MaxTokens int64     `json:"max_tokens"`
 	Messages  []Message `json:"messages"`
 }
 
@@ -36,20 +36,30 @@ type Response struct {
 	Content Content `json:"content"`
 }
 
-func Ask(input string) (string, error) {
+// input from user
+type UserInputOpts struct {
+	Messages  []string
+	Model     string
+	MaxTokens int64
+}
+
+func Ask(opts UserInputOpts) (string, error) {
+	slog.Debug("", "input opts", opts)
+
 	apiKey := os.Getenv("ANTHROPIC_API_KEY")
 	if apiKey == "" {
 		return "", fmt.Errorf("please set the ANTHROPIC_API_KEY environment variable")
 	}
 
 	// Create the request body
+	// TODO: compile list of messages
 	reqBody := Request{
-		Model:     "claude-3-7-sonnet-20250219",
-		MaxTokens: 2048,
+		Model:     opts.Model,
+		MaxTokens: opts.MaxTokens,
 		Messages: []Message{
 			{
 				Role:    "user",
-				Content: input,
+				Content: opts.Messages[0],
 			},
 		},
 	}

@@ -15,18 +15,18 @@ import (
 )
 
 var logger *slog.Logger
-var programLevel = new(slog.LevelVar) // Info by default
+var logLevel = new(slog.LevelVar) // Info by default
 
 func configure(cmd *cli.Command) {
 	logger = slog.Default()
 	if cmd.String("output") == "json" {
 		color.NoColor = true
-		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: programLevel}))
+		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel}))
 	}
 	slog.SetDefault(logger)
 
 	if cmd.Bool("debug") {
-		programLevel.Set(slog.LevelDebug)
+		logLevel.Set(slog.LevelDebug)
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 	}
 }
@@ -56,13 +56,26 @@ func main() {
 				Aliases: []string{"d"},
 				Usage:   "debug log level",
 			},
+			&cli.StringFlag{
+				Name:    "model",
+				Aliases: []string{"m"},
+				Usage:   "claude model name",
+				Value:   "claude-3-7-sonnet-20250219",
+			},
+			&cli.IntFlag{
+				Name:    "max-tokens",
+				Aliases: []string{"t"},
+				Usage:   "max tokens",
+				Value:   2048,
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			if cmd.Bool("no-color") {
 				color.NoColor = true
 			}
 			question := strings.Join(cmd.Args().Tail(), " ")
-			go askQuestion(question, done)
+			opts := claude.UserInputOpts{Messages: []string{question}, Model: cmd.String("model"), MaxTokens: cmd.Int("max-tokens")}
+			go askQuestion(opts, done)
 			err := showProgress(done)
 			return err
 		},
@@ -73,8 +86,8 @@ func main() {
 	}
 }
 
-func askQuestion(input string, done chan<- error) {
-	answer, err := claude.Ask(input)
+func askQuestion(opts claude.UserInputOpts, done chan<- error) {
+	answer, err := claude.Ask(opts)
 	if err != nil {
 		done <- err
 	}
