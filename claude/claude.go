@@ -16,9 +16,10 @@ type Message struct {
 }
 
 type Request struct {
-	Model     string    `json:"model"`
-	MaxTokens int64     `json:"max_tokens"`
-	Messages  []Message `json:"messages"`
+	Model       string    `json:"model"`
+	MaxTokens   int64     `json:"max_tokens"`
+	Temperature float64   `json:"temperature"`
+	Messages    []Message `json:"messages"`
 }
 
 type Answer struct {
@@ -38,9 +39,10 @@ type Response struct {
 
 // input from user
 type UserInputOpts struct {
-	Messages  []string
-	Model     string
-	MaxTokens int64
+	Messages    []string
+	Model       string
+	MaxTokens   int64
+	Temperature float64
 }
 
 func Ask(opts UserInputOpts) (string, error) {
@@ -54,8 +56,9 @@ func Ask(opts UserInputOpts) (string, error) {
 	// Create the request body
 	// TODO: compile list of messages
 	reqBody := Request{
-		Model:     opts.Model,
-		MaxTokens: opts.MaxTokens,
+		Model:       opts.Model,
+		MaxTokens:   opts.MaxTokens,
+		Temperature: opts.Temperature,
 		Messages: []Message{
 			{
 				Role:    "user",

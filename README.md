@@ -6,7 +6,8 @@ and structured output of chatbot responses for stdin pipes (|)
 ## Run
 
 ```bash
-go run ./cmd is golang better than C?
+MSG="is golang better than C?"
+echo ${MSG} | go run ./cmd
 ```
 
 ## Install
@@ -19,13 +20,13 @@ export PATH="$PATH:$HOME/go/bin"
 ## Simple Usage
 
 ```bash
-goclaude is golang better than C?
+echo ${MSG} | goclaude
 ```
 
 ## Structured output and piping
 
 ```bash
-goclaude is golang better than C? -o json | jq
+echo ${MSG} | goclaude -o json | jq
 ```
 
 ## User guide
