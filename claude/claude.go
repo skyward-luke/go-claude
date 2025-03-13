@@ -3,6 +3,7 @@ package claude
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -43,14 +44,19 @@ type UserInputOpts struct {
 	Model       string
 	MaxTokens   int64
 	Temperature float64
+	APIKey      string
+	APIVersion  string // anthropic-version
 }
 
 func Ask(opts UserInputOpts) (string, error) {
 	slog.Debug("", "input opts", opts)
 
-	apiKey := os.Getenv("ANTHROPIC_API_KEY")
+	apiKey := opts.APIKey
 	if apiKey == "" {
-		return "", fmt.Errorf("please set the ANTHROPIC_API_KEY environment variable")
+		apiKey = os.Getenv("ANTHROPIC_API_KEY")
+	}
+	if apiKey == "" {
+		return "", fmt.Errorf("please set ANTHROPIC_API_KEY env var (preferred) or use -key flag")
 	}
 
 	// Create the request body
@@ -81,7 +87,7 @@ func Ask(opts UserInputOpts) (string, error) {
 
 	// Add headers
 	req.Header.Set("x-api-key", apiKey)
-	req.Header.Set("anthropic-version", "2023-06-01")
+	req.Header.Set("anthropic-version", opts.APIVersion)
 	req.Header.Set("content-type", "application/json")
 
 	// Send the request
@@ -106,5 +112,8 @@ func Ask(opts UserInputOpts) (string, error) {
 		return "", err
 	}
 
+	if len(result.Content) == 0 {
+		return "", errors.New("result did not contain valid response. use -d to debug")
+	}
 	return result.Content[0].Text, nil
 }

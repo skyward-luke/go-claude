@@ -45,7 +45,14 @@ func main() {
 			}
 
 			t := cmd.Float("temperature")
-			opts := claude.UserInputOpts{Messages: []string{message}, Model: cmd.String("model"), MaxTokens: cmd.Int("max-tokens"), Temperature: t}
+			opts := claude.UserInputOpts{
+				Messages:    []string{message},
+				APIKey:      cmd.String("key"),
+				APIVersion:  cmd.String("api-version"),
+				Model:       cmd.String("model"),
+				MaxTokens:   cmd.Int("max-tokens"),
+				Temperature: t,
+			}
 
 			go doChat(opts, done)
 			err = showProgress(done)
@@ -72,10 +79,18 @@ func main() {
 				Aliases: []string{"m"},
 				Usage:   "claude model name",
 				Value:   "claude-3-7-sonnet-20250219",
+			}, &cli.StringFlag{
+				Name:    "api-key",
+				Aliases: []string{"key"},
+				Usage:   "API key",
+			}, &cli.StringFlag{
+				Name:  "api-version",
+				Usage: "anthropic-version for request header",
+				Value: "2023-06-01",
 			},
 			&cli.IntFlag{
 				Name:    "max-tokens",
-				Aliases: []string{"k"},
+				Aliases: []string{"max"},
 				Usage:   "max tokens",
 				Value:   2048,
 			},
