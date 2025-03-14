@@ -22,7 +22,8 @@ func main() {
 	done := make(chan error)
 
 	cmd := &cli.Command{
-		Usage: "Send a message to Claude, either from stdin or as positional arg",
+		Usage:     "Send a message to Claude, either from stdin or as positional arg",
+		UsageText: "goclaude what is a golang gopher? -t 0.5 --api-key sk-123456",
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 			configure(cmd)
 			if cmd.Bool("no-color") {
@@ -33,6 +34,7 @@ func main() {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			var message string
 			var err error
+
 			if stdin.HasData() {
 				message, err = stdin.Read(os.Stdin)
 				if err != nil {
@@ -42,6 +44,10 @@ func main() {
 				tail := cmd.Args().Tail()
 				slog.Debug("", "tail", tail)
 				message = strings.Join(tail, " ")
+			}
+
+			if message == "" {
+				cli.ShowAppHelpAndExit(cmd, 1)
 			}
 
 			t := cmd.Float("temperature")
