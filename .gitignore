@@ -1,3 +1,4 @@
 goclaude
 tmp/
 *.env
+__debug*

@@ -51,6 +51,7 @@ func main() {
 			}
 
 			t := cmd.Float("temperature")
+
 			opts := claude.UserInputOpts{
 				Messages:    []string{message},
 				APIKey:      cmd.String("key"),
@@ -58,6 +59,7 @@ func main() {
 				Model:       cmd.String("model"),
 				MaxTokens:   cmd.Int("max-tokens"),
 				Temperature: t,
+				Count:       cmd.Bool("count"),
 			}
 
 			go doChat(opts, done)
@@ -70,10 +72,9 @@ func main() {
 				Name:  "no-color",
 				Usage: "disable color output",
 			},
-			&cli.StringFlag{
-				Name:    "output",
-				Aliases: []string{"o"},
-				Usage:   "output format, 'text' (default) or 'json'",
+			&cli.BoolFlag{
+				Name:  "count",
+				Usage: "count tokens before sending",
 			},
 			&cli.BoolFlag{
 				Name:    "debug",
@@ -81,15 +82,22 @@ func main() {
 				Usage:   "debug log level",
 			},
 			&cli.StringFlag{
+				Name:    "output",
+				Aliases: []string{"o"},
+				Usage:   "output format, 'text' (default) or 'json'",
+			},
+			&cli.StringFlag{
 				Name:    "model",
 				Aliases: []string{"m"},
 				Usage:   "claude model name",
 				Value:   "claude-3-7-sonnet-20250219",
-			}, &cli.StringFlag{
+			},
+			&cli.StringFlag{
 				Name:    "api-key",
 				Aliases: []string{"key"},
 				Usage:   "API key",
-			}, &cli.StringFlag{
+			},
+			&cli.StringFlag{
 				Name:  "api-version",
 				Usage: "anthropic-version for request header",
 				Value: "2023-06-01",
