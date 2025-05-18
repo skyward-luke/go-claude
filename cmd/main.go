@@ -22,7 +22,7 @@ func main() {
 	done := make(chan error)
 
 	cmd := &cli.Command{
-		Usage:     "Send a message to Claude, either from stdin or as positional arg",
+		Usage:     "Chat with Claude, either from stdin or as positional arg, and optionally keep conversation history",
 		UsageText: "goclaude what is a golang gopher? -t 0.5 --api-key sk-123456",
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 			configure(cmd)
@@ -50,16 +50,15 @@ func main() {
 				cli.ShowAppHelpAndExit(cmd, 1)
 			}
 
-			t := cmd.Float("temperature")
-
 			opts := claude.UserInputOpts{
 				Messages:    []string{message},
 				APIKey:      cmd.String("key"),
 				APIVersion:  cmd.String("api-version"),
 				Model:       cmd.String("model"),
-				MaxTokens:   cmd.Int("max-tokens"),
-				Temperature: t,
+				MaxTokens:   int32(cmd.Int("max-tokens")),
+				Temperature: float32(cmd.Float("temperature")),
 				Count:       cmd.Bool("count"),
+				MemoryId:    int32(cmd.Int("memory-id")),
 			}
 
 			go doChat(opts, done)
@@ -107,6 +106,12 @@ func main() {
 				Aliases: []string{"max"},
 				Usage:   "max tokens",
 				Value:   2048,
+			},
+			&cli.IntFlag{
+				Name:    "memory-id",
+				Aliases: []string{"id"},
+				Usage:   "memory id to group messages together",
+				Value:   time.Now().Unix(),
 			},
 			&cli.FloatFlag{
 				Name:    "temperature",

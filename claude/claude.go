@@ -2,13 +2,17 @@ package claude
 
 import (
 	"bytes"
+	"chat"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
+	"memory"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 )
 
 type Message struct {
@@ -23,8 +27,8 @@ type BaseRequest struct {
 
 type MessagesRequest struct {
 	BaseRequest
-	MaxTokens   int64   `json:"max_tokens"`
-	Temperature float64 `json:"temperature"`
+	MaxTokens   int32   `json:"max_tokens"`
+	Temperature float32 `json:"temperature"`
 }
 
 type Answer struct {
@@ -50,41 +54,61 @@ type TokenCountResponse struct {
 type UserInputOpts struct {
 	Messages    []string
 	Model       string
-	MaxTokens   int64
-	Temperature float64
+	MaxTokens   int32
+	Temperature float32
 	APIKey      string
 	APIVersion  string // anthropic-version
 	Count       bool   // count tokens before sending
+	MemoryId    int32  // memory id to group messages together
+}
+
+func (x *UserInputOpts) GetAPIKey() (string, error) {
+	if x.APIKey == "" {
+		x.APIKey = os.Getenv("ANTHROPIC_API_KEY")
+	}
+	if x.APIKey == "" {
+		return "", fmt.Errorf("please set ANTHROPIC_API_KEY env var (preferred) or use -key flag")
+	}
+	return x.APIKey, nil
+}
+
+func getConversation(m *chat.Memory, newUserMsg string) []Message {
+	newMsg := Message{Role: strings.ToLower(memory.User.String()), Content: newUserMsg}
+
+	conversation := []Message{}
+
+	for _, x := range m.ChatMessages {
+		conversation = append(conversation, Message{Role: x.Role, Content: x.Content})
+	}
+	conversation = append(conversation, newMsg)
+
+	return conversation
 }
 
 func Ask(opts UserInputOpts) (string, error) {
 	slog.Debug("", "input opts", opts)
 
-	apiKey := opts.APIKey
-	if apiKey == "" {
-		apiKey = os.Getenv("ANTHROPIC_API_KEY")
-	}
-	if apiKey == "" {
-		return "", fmt.Errorf("please set ANTHROPIC_API_KEY env var (preferred) or use -key flag")
+	apiKey, err := opts.GetAPIKey()
+	if err != nil {
+		return "", err
 	}
 
-	// Create the request body
 	var reqBody any
 
+	m, err := memory.Get(opts.MemoryId)
+	if err != nil {
+		return "", err
+	}
+
 	reqBody = BaseRequest{
-		Model: opts.Model,
-		Messages: []Message{
-			{
-				Role: "user",
-				// TODO: compile list of messages
-				Content: opts.Messages[0],
-			},
-		},
+		Model:    opts.Model,
+		Messages: getConversation(m, opts.Messages[0]),
 	}
 
 	messagesEndpoint := "https://api.anthropic.com/v1/messages"
 
 	if opts.Count {
+		// use count_tokens endpoint
 		messagesEndpoint += "/count_tokens"
 	} else {
 		reqBody = MessagesRequest{
@@ -97,25 +121,22 @@ func Ask(opts UserInputOpts) (string, error) {
 
 	slog.Debug("", "req", reqBody)
 
-	// Convert the request body to JSON
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
 		return "", err
 	}
 
-	// Create a new HTTP request
 	req, err := http.NewRequest("POST", messagesEndpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return "", err
 	}
 
-	// Add headers
 	req.Header.Set("x-api-key", apiKey)
 	req.Header.Set("anthropic-version", opts.APIVersion)
 	req.Header.Set("content-type", "application/json")
 
 	// Send the request
-	client := &http.Client{}
+	client := &http.Client{Timeout: 60 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
@@ -152,5 +173,11 @@ func processAnswer(opts UserInputOpts, body []byte) (string, error) {
 	if len(result.Content) == 0 {
 		return "", errors.New("result did not contain valid response. use -d to debug")
 	}
+
+	if !opts.Count {
+		memory.Save(opts.Messages[0], memory.User, opts.MemoryId)
+		memory.Save(result.Content[0].Text, memory.Assistant, opts.MemoryId)
+	}
+
 	return result.Content[0].Text, nil
 }

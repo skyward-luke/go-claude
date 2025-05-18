@@ -36,3 +36,13 @@ echo ${MSG} | goclaude -o json | jq
 ```bash
 goclaude -h
 ```
+
+## Memory
+
+Chat history is saved to file in protocol buffer format.
+
+### Working with Protocol Buffers
+
+Generate pb code in pb/chat:
+
+`protoc -I=proto/ --go_out=. chat.proto`

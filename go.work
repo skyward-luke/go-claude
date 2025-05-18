@@ -4,4 +4,6 @@ use (
 	./claude
 	./cmd
 	./stdin
+	./memory
+	./pb/chat
 )

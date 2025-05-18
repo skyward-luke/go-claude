@@ -1,0 +1,25 @@
+syntax = "proto3";
+package chatpb;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "pb/chat";
+
+message ChatMessage {
+  string role = 1;
+  string content = 2;
+
+  google.protobuf.Timestamp ts = 3;
+}
+
+// Collection of chat messages
+message Memory {
+  repeated ChatMessage chat_messages = 1;
+
+  google.protobuf.Timestamp last_used = 2;
+}
+
+// map of id -> memory (chat messages)
+message Memories {
+  map<int32, Memory> batch = 1;
+}

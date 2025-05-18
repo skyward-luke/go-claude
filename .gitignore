@@ -2,3 +2,4 @@ goclaude
 tmp/
 *.env
 __debug*
+*.bin
