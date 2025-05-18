@@ -3,12 +3,20 @@
 A playful Golang CLI for sending user input to Claude, with optional colorized output
 and structured output of chatbot responses for stdin pipes (|)
 
+Serializes the conversation history to file, in protocol buffer format.
+
+
 ## Run
 
 ```bash
 MSG="is golang better than C?"
-go run ./cmd ${MSG}
+go run ./cmd ${MSG} -memory-id 1
+MSG="is C better than Rust?"
+go run ./cmd ${MSG} -memory-id 1
 echo ${MSG} | go run ./cmd
+
+# count input tokens in case history is long
+go run ./cmd ${MSG} -memory-id 1 -count
 ```
 
 ## Install
