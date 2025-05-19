@@ -28,6 +28,9 @@ func main() {
 		Name:      "goclaude",
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 			configure(cmd)
+			if cmd.Bool("clear") {
+				_ = os.Remove(memory.GetMemoriesFilePath(fmt.Sprintf(".%s", cmd.Name)))
+			}
 			if cmd.Bool("no-color") {
 				color.NoColor = true
 			}
@@ -82,6 +85,10 @@ func main() {
 				Name:    "debug",
 				Aliases: []string{"d"},
 				Usage:   "debug log level",
+			},
+			&cli.BoolFlag{
+				Name:  "clear",
+				Usage: "clear memories file",
 			},
 			&cli.StringFlag{
 				Name:    "output",
