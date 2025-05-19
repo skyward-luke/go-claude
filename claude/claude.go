@@ -89,6 +89,7 @@ func getConversation(m *chat.Memory, newUserMsg string) []Message {
 
 func Ask(opts UserInputOpts) (string, error) {
 	slog.Debug("", "input opts", opts)
+	savedMemories := &memory.SavedMemories{FilePath: opts.MemoriesFilePath}
 
 	apiKey, err := opts.GetAPIKey()
 	if err != nil {
@@ -97,7 +98,7 @@ func Ask(opts UserInputOpts) (string, error) {
 
 	var reqBody any
 
-	m, err := memory.Get(opts.MemoriesFilePath, opts.MemoryId)
+	m, err := savedMemories.Get(opts.MemoryId)
 	if err != nil {
 		return "", err
 	}
@@ -154,10 +155,10 @@ func Ask(opts UserInputOpts) (string, error) {
 	slog.Debug("", "status", resp.Status)
 	slog.Debug("", "raw", string(body))
 
-	return processAnswer(opts, body)
+	return processAnswer(opts, body, savedMemories)
 }
 
-func processAnswer(opts UserInputOpts, body []byte) (string, error) {
+func processAnswer(opts UserInputOpts, body []byte, savedMemories *memory.SavedMemories) (string, error) {
 	if opts.Count {
 		var result TokenCountResponse
 		if err := json.Unmarshal(body, &result); err != nil {
@@ -177,8 +178,8 @@ func processAnswer(opts UserInputOpts, body []byte) (string, error) {
 	}
 
 	if !opts.Count {
-		memory.Save(opts.MemoriesFilePath, opts.Messages[0], memory.User, opts.MemoryId)
-		memory.Save(opts.MemoriesFilePath, result.Content[0].Text, memory.Assistant, opts.MemoryId)
+		savedMemories.Save(opts.Messages[0], memory.User, opts.MemoryId)
+		savedMemories.Save(result.Content[0].Text, memory.Assistant, opts.MemoryId)
 	}
 
 	return result.Content[0].Text, nil

@@ -19,8 +19,12 @@ const (
 	Assistant
 )
 
-func Get(memoriesFilePath string, memoryid int32) (*chat.Memory, error) {
-	memories, err := read(memoriesFilePath)
+type SavedMemories struct {
+	FilePath string
+}
+
+func (m *SavedMemories) Get(memoryid int32) (*chat.Memory, error) {
+	memories, err := m.read()
 	if err != nil {
 		return nil, err
 	}
@@ -32,8 +36,8 @@ func Get(memoriesFilePath string, memoryid int32) (*chat.Memory, error) {
 	return memory, nil
 }
 
-func Save(memoriesFilePath string, content string, role Role, memoryid int32) {
-	memories, err := read(memoriesFilePath)
+func (m *SavedMemories) Save(content string, role Role, memoryid int32) {
+	memories, err := m.read()
 	if err != nil {
 		memories = &chat.Memories{}
 		log.Println(err)
@@ -57,13 +61,13 @@ func Save(memoriesFilePath string, content string, role Role, memoryid int32) {
 	log.Println(memory)
 	log.Println(memories)
 
-	if err := write(memoriesFilePath, memories); err != nil {
+	if err := m.write(memories); err != nil {
 		log.Fatalln("failed to save memories:", err)
 	}
 }
 
-func fileExists(memoriesFilePath string) bool {
-	_, err := os.Stat(memoriesFilePath)
+func (m *SavedMemories) fileExists() bool {
+	_, err := os.Stat(m.FilePath)
 	if err == nil {
 		return true
 	} else if os.IsNotExist(err) {
@@ -72,12 +76,12 @@ func fileExists(memoriesFilePath string) bool {
 	return false
 }
 
-func read(memoriesFilePath string) (*chat.Memories, error) {
-	if !fileExists(memoriesFilePath) {
+func (m *SavedMemories) read() (*chat.Memories, error) {
+	if !m.fileExists() {
 		return &chat.Memories{}, nil
 	}
 
-	in, err := os.ReadFile(memoriesFilePath)
+	in, err := os.ReadFile(m.FilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -89,13 +93,13 @@ func read(memoriesFilePath string) (*chat.Memories, error) {
 	return memories, nil
 }
 
-func write(memoriesFilePath string, memories *chat.Memories) error {
+func (m *SavedMemories) write(memories *chat.Memories) error {
 	out, err := proto.Marshal(memories)
 	if err != nil {
 		return err
 	}
 
-	file, err := os.OpenFile(memoriesFilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(m.FilePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
