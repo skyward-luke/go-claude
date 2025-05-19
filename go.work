@@ -3,7 +3,6 @@ go 1.23.5
 use (
 	./claude
 	./cmd
-	./stdin
 	./memory
 	./pb/chat
 )

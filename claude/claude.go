@@ -52,23 +52,25 @@ type TokenCountResponse struct {
 
 // input from user
 type UserInputOpts struct {
-	Messages    []string
-	Model       string
-	MaxTokens   int32
-	Temperature float32
-	APIKey      string
-	APIVersion  string // anthropic-version
-	Count       bool   // count tokens before sending
-	MemoryId    int32  // memory id to group messages together
+	MemoriesFilePath string
+	Messages         []string
+	Model            string
+	MaxTokens        int32
+	Temperature      float32
+	APIKey           string
+	APIVersion       string // anthropic-version
+	Count            bool   // count tokens before sending
+	MemoryId         int32  // memory id to group messages together
 }
 
 func (x *UserInputOpts) GetAPIKey() (string, error) {
 	if x.APIKey == "" {
 		x.APIKey = os.Getenv("ANTHROPIC_API_KEY")
+		if x.APIKey == "" {
+			return "", fmt.Errorf("please set ANTHROPIC_API_KEY env var (preferred) or use -key flag")
+		}
 	}
-	if x.APIKey == "" {
-		return "", fmt.Errorf("please set ANTHROPIC_API_KEY env var (preferred) or use -key flag")
-	}
+
 	return x.APIKey, nil
 }
 
@@ -95,7 +97,7 @@ func Ask(opts UserInputOpts) (string, error) {
 
 	var reqBody any
 
-	m, err := memory.Get(opts.MemoryId)
+	m, err := memory.Get(opts.MemoriesFilePath, opts.MemoryId)
 	if err != nil {
 		return "", err
 	}
@@ -175,8 +177,8 @@ func processAnswer(opts UserInputOpts, body []byte) (string, error) {
 	}
 
 	if !opts.Count {
-		memory.Save(opts.Messages[0], memory.User, opts.MemoryId)
-		memory.Save(result.Content[0].Text, memory.Assistant, opts.MemoryId)
+		memory.Save(opts.MemoriesFilePath, opts.Messages[0], memory.User, opts.MemoryId)
+		memory.Save(opts.MemoriesFilePath, result.Content[0].Text, memory.Assistant, opts.MemoryId)
 	}
 
 	return result.Content[0].Text, nil

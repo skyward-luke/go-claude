@@ -25,4 +25,4 @@ jobs:
       run: go build -v ./cmd
 
     - name: Test
-      run: go test -v ./stdin
+      run: go test -v ./cmd/stdin

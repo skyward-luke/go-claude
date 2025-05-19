@@ -4,10 +4,11 @@ import (
 	"claude"
 	"context"
 	"fmt"
+	"goclaude/stdin"
 	"log"
 	"log/slog"
+	"memory"
 	"os"
-	"stdin"
 	"strings"
 	"time"
 
@@ -24,6 +25,7 @@ func main() {
 	cmd := &cli.Command{
 		Usage:     "Chat with Claude, either from stdin or as positional arg, and optionally keep conversation history",
 		UsageText: "goclaude what is a golang gopher? -t 0.5 --api-key sk-123456",
+		Name:      "goclaude",
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 			configure(cmd)
 			if cmd.Bool("no-color") {
@@ -51,14 +53,15 @@ func main() {
 			}
 
 			opts := claude.UserInputOpts{
-				Messages:    []string{message},
-				APIKey:      cmd.String("key"),
-				APIVersion:  cmd.String("api-version"),
-				Model:       cmd.String("model"),
-				MaxTokens:   int32(cmd.Int("max-tokens")),
-				Temperature: float32(cmd.Float("temperature")),
-				Count:       cmd.Bool("count"),
-				MemoryId:    int32(cmd.Int("memory-id")),
+				MemoriesFilePath: memory.GetMemoriesFilePath(fmt.Sprintf(".%s", cmd.Name)),
+				Messages:         []string{message},
+				APIKey:           cmd.String("key"),
+				APIVersion:       cmd.String("api-version"),
+				Model:            cmd.String("model"),
+				MaxTokens:        int32(cmd.Int("max-tokens")),
+				Temperature:      float32(cmd.Float("temperature")),
+				Count:            cmd.Bool("count"),
+				MemoryId:         int32(cmd.Int("memory-id")),
 			}
 
 			go doChat(opts, done)
