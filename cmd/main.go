@@ -104,7 +104,7 @@ func main() {
 			&cli.StringFlag{
 				Name:    "api-key",
 				Aliases: []string{"key"},
-				Usage:   "API key",
+				Usage:   "API key - overrides ANTHROPIC_API_KEY envvar if set",
 			},
 			&cli.StringFlag{
 				Name:  "api-version",
