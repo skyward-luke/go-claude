@@ -67,7 +67,11 @@ func main() {
 				MemoryId:         int32(cmd.Int("memory-id")),
 			}
 
-			go doChat(opts, done)
+			timeout := time.Duration(cmd.Int("timeout")) * time.Second
+			tctx, cancel := context.WithTimeout(ctx, timeout)
+			defer cancel()
+
+			go doChat(tctx, opts, done)
 			err = showProgress(done)
 
 			return err
@@ -123,6 +127,11 @@ func main() {
 				Usage:   "memory id to group messages together",
 				Value:   time.Now().Unix(),
 			},
+			&cli.IntFlag{
+				Name:  "timeout",
+				Usage: "timeout in seconds to cancel claude request",
+				Value: 60,
+			},
 			&cli.FloatFlag{
 				Name:    "temperature",
 				Aliases: []string{"t"},
@@ -157,8 +166,8 @@ func configure(cmd *cli.Command) {
 	}
 }
 
-func doChat(opts claude.UserInputOpts, done chan<- error) {
-	resp, err := claude.Ask(opts)
+func doChat(ctx context.Context, opts claude.UserInputOpts, done chan<- error) {
+	resp, err := claude.Ask(ctx, opts)
 	if err != nil {
 		done <- err
 	}

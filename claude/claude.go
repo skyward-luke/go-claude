@@ -3,6 +3,7 @@ package claude
 import (
 	"bytes"
 	"chat"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 )
 
 type Message struct {
@@ -87,7 +87,7 @@ func getConversation(m *chat.Memory, newUserMsg string) []Message {
 	return conversation
 }
 
-func Ask(opts UserInputOpts) (string, error) {
+func Ask(ctx context.Context, opts UserInputOpts) (string, error) {
 	slog.Debug("", "input opts", opts)
 	savedMemories := &memory.SavedMemories{FilePath: opts.MemoriesFilePath}
 
@@ -129,7 +129,7 @@ func Ask(opts UserInputOpts) (string, error) {
 		return "", err
 	}
 
-	req, err := http.NewRequest("POST", messagesEndpoint, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, messagesEndpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return "", err
 	}
@@ -138,8 +138,7 @@ func Ask(opts UserInputOpts) (string, error) {
 	req.Header.Set("anthropic-version", opts.APIVersion)
 	req.Header.Set("content-type", "application/json")
 
-	// Send the request
-	client := &http.Client{Timeout: 60 * time.Second}
+	client := http.DefaultClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
@@ -153,7 +152,11 @@ func Ask(opts UserInputOpts) (string, error) {
 	}
 
 	slog.Debug("", "status", resp.Status)
-	slog.Debug("", "raw", string(body))
+	slog.Debug("", "body", string(body))
+
+	if resp.StatusCode > 299 {
+		return "", fmt.Errorf("error: %s - %s", resp.Status, body)
+	}
 
 	return processAnswer(opts, body, savedMemories)
 }

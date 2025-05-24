@@ -1,12 +1,12 @@
 # Golang CLI for Claude Chatbot API
 
-A playful Golang CLI for sending user input to Claude, with optional colorized output
-and structured output of chatbot responses for stdin pipes (|)
+A playful Golang CLI for sending user input to Claude, with optional colorized
+output and structured output of chatbot responses for stdin pipes (|)
 
 Serializes the conversation history to file, in protocol buffer format.
 
 
-## Run
+## Develop
 
 ```bash
 MSG="is golang better than C?"
